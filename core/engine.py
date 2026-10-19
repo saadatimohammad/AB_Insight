@@ -3,8 +3,8 @@ from itertools import combinations
 
 from core.models import BinaryVariant
 from core.validator import validate_experiment
-from statistics.chi_square import calculate_chi_square
-from statistics.bonferroni import apply_bonferroni
+from statistical_tests.chi_square import calculate_chi_square
+from statistical_tests.bonferroni import apply_bonferroni
 from config import DEFAULT_ALPHA
 
 

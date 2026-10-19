@@ -1,7 +1,7 @@
 
 import unittest
 
-from statistics.bonferroni import apply_bonferroni
+from statistical_tests.bonferroni import apply_bonferroni
 
 
 class TestBonferroni(unittest.TestCase):

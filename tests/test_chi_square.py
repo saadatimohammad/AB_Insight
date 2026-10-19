@@ -2,7 +2,7 @@
 import unittest
 
 from core.models import BinaryVariant
-from statistics.chi_square import calculate_chi_square
+from statistical_tests.chi_square import calculate_chi_square
 
 
 class TestChiSquare(unittest.TestCase):
