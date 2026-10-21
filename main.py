@@ -7,6 +7,7 @@ from core.interpreter import interpret_experiment
 from inputs.config_reader import read_config
 from inputs.file_reader import read_experiment_file
 from reports.console import print_console_report
+from reports.excel import generate_excel_report
 
 
 def main() -> None:
@@ -36,10 +37,20 @@ def main() -> None:
             print()
             print_console_report(interpreted_result)
 
+        if settings["excel"]:
+            report_path = generate_excel_report(
+                interpreted_result,
+                settings["output_path"],
+            )
+
+            print(f"\nExcel report saved to: {report_path}")
+
     except (
         ValueError,
         TypeError,
         FileNotFoundError,
+        PermissionError,
+        OSError,
         tomllib.TOMLDecodeError,
     ) as error:
         print(f"\nError: {error}")

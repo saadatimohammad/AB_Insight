@@ -21,8 +21,11 @@ class TestMain(unittest.TestCase):
             "comparison_mode": "control",
             "alpha": 0.05,
             "console": True,
+            "excel": True,
+            "output_path": Path("data/output/results.xlsx"),
         }
 
+    @patch("main.generate_excel_report")
     @patch("main.print_console_report")
     @patch("main.read_experiment_file")
     @patch("main.read_config")
@@ -31,9 +34,11 @@ class TestMain(unittest.TestCase):
         mock_config,
         mock_file,
         mock_report,
+        mock_excel,
     ):
         mock_config.return_value = self.settings
         mock_file.return_value = self.variants
+        mock_excel.return_value = self.settings["output_path"]
 
         main()
 
@@ -42,6 +47,7 @@ class TestMain(unittest.TestCase):
             str(self.settings["file_path"])
         )
         mock_report.assert_called_once()
+        mock_excel.assert_called_once()
 
         result = mock_report.call_args.args[0]
 
@@ -54,6 +60,15 @@ class TestMain(unittest.TestCase):
             "control",
         )
 
+        excel_result = mock_excel.call_args.args[0]
+
+        self.assertEqual(result, excel_result)
+        self.assertEqual(
+            mock_excel.call_args.args[1],
+            self.settings["output_path"],
+        )
+
+    @patch("main.generate_excel_report")
     @patch("main.print_console_report")
     @patch("main.read_experiment_file")
     @patch("main.read_config")
@@ -62,12 +77,14 @@ class TestMain(unittest.TestCase):
         mock_config,
         mock_file,
         mock_report,
+        mock_excel,
     ):
         mock_config.return_value = {
             **self.settings,
             "comparison_mode": "all_pairs",
         }
         mock_file.return_value = self.variants
+        mock_excel.return_value = self.settings["output_path"]
 
         main()
 
@@ -77,7 +94,9 @@ class TestMain(unittest.TestCase):
             result["number_of_comparisons"],
             3,
         )
+        mock_excel.assert_called_once()
 
+    @patch("main.generate_excel_report")
     @patch("main.print_console_report")
     @patch("main.read_experiment_file")
     @patch("main.read_config")
@@ -86,16 +105,93 @@ class TestMain(unittest.TestCase):
         mock_config,
         mock_file,
         mock_report,
+        mock_excel,
     ):
         mock_config.return_value = {
             **self.settings,
             "console": False,
         }
         mock_file.return_value = self.variants
+        mock_excel.return_value = self.settings["output_path"]
 
         main()
 
         mock_report.assert_not_called()
+        mock_excel.assert_called_once()
+
+    @patch("main.generate_excel_report")
+    @patch("main.print_console_report")
+    @patch("main.read_experiment_file")
+    @patch("main.read_config")
+    def test_excel_disabled(
+        self,
+        mock_config,
+        mock_file,
+        mock_report,
+        mock_excel,
+    ):
+        mock_config.return_value = {
+            **self.settings,
+            "excel": False,
+        }
+        mock_file.return_value = self.variants
+
+        main()
+
+        mock_report.assert_called_once()
+        mock_excel.assert_not_called()
+
+    @patch("main.generate_excel_report")
+    @patch("main.print_console_report")
+    @patch("main.read_experiment_file")
+    @patch("main.read_config")
+    def test_excel_output_path(
+        self,
+        mock_config,
+        mock_file,
+        mock_report,
+        mock_excel,
+    ):
+        mock_config.return_value = self.settings
+        mock_file.return_value = self.variants
+        mock_excel.return_value = self.settings["output_path"]
+
+        main()
+
+        mock_excel.assert_called_once()
+
+        args = mock_excel.call_args.args
+
+        self.assertEqual(
+            args[1],
+            self.settings["output_path"],
+        )
+
+    @patch(
+        "main.generate_excel_report",
+        side_effect=PermissionError(
+            "Cannot save Excel report"
+        ),
+    )
+    @patch("main.print_console_report")
+    @patch("main.read_experiment_file")
+    @patch("main.read_config")
+    def test_excel_save_error(
+        self,
+        mock_config,
+        mock_file,
+        mock_report,
+        mock_excel,
+    ):
+        mock_config.return_value = self.settings
+        mock_file.return_value = self.variants
+
+        with patch("builtins.print") as mock_print:
+            main()
+
+        mock_print.assert_any_call(
+            "\nError: Cannot save Excel report"
+        )
 
     @patch(
         "main.read_config",
@@ -111,6 +207,7 @@ class TestMain(unittest.TestCase):
             "\nError: Configuration file not found"
         )
 
+    @patch("main.generate_excel_report")
     @patch("main.print_console_report")
     @patch(
         "main.read_experiment_file",
@@ -124,6 +221,7 @@ class TestMain(unittest.TestCase):
         mock_config,
         mock_file,
         mock_report,
+        mock_excel,
     ):
         mock_config.return_value = self.settings
 
@@ -131,10 +229,12 @@ class TestMain(unittest.TestCase):
             main()
 
         mock_report.assert_not_called()
+        mock_excel.assert_not_called()
         mock_print.assert_any_call(
             "\nError: Input file not found"
         )
 
+    @patch("main.generate_excel_report")
     @patch("main.print_console_report")
     @patch("main.read_experiment_file")
     @patch("main.read_config")
@@ -143,6 +243,7 @@ class TestMain(unittest.TestCase):
         mock_config,
         mock_file,
         mock_report,
+        mock_excel,
     ):
         mock_config.return_value = self.settings
         mock_file.return_value = [
@@ -154,6 +255,7 @@ class TestMain(unittest.TestCase):
             main()
 
         mock_report.assert_not_called()
+        mock_excel.assert_not_called()
 
         self.assertTrue(
             any(

@@ -69,10 +69,21 @@ def run_experiment(
             correction["significant_results"][index]
         )
 
+    variant_details = [
+        {
+            "name": variant.name,
+            "sample_size": variant.sample_size,
+            "success_count": variant.success_count,
+            "success_rate": variant.success_rate,
+        }
+        for variant in variants
+    ]
+
     return {
         "comparison_mode": comparison_mode,
         "alpha": alpha,
         "adjusted_alpha": correction["adjusted_alpha"],
         "number_of_comparisons": correction["number_of_tests"],
+        "variants": variant_details,
         "comparisons": comparisons,
     }

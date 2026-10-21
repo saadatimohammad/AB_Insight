@@ -15,3 +15,9 @@ alpha = 0.05
 [output]
 # Display statistical results in the console
 console = true
+
+# Save statistical results to an Excel workbook
+excel = true
+
+# Destination of the Excel report
+output_path = "data/output/results.xlsx"

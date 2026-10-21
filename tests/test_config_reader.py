@@ -1,5 +1,4 @@
 
-import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +22,8 @@ class TestConfigReader(unittest.TestCase):
         comparison_mode="control",
         alpha="0.05",
         console="true",
+        excel="true",
+        output_path="data/output/results.xlsx",
     ):
         content = f"""
 [input]
@@ -34,6 +35,8 @@ alpha = {alpha}
 
 [output]
 console = {console}
+excel = {excel}
+output_path = "{output_path}"
 """
         self.config_path.write_text(
             content,
@@ -51,7 +54,9 @@ console = {console}
         )
         self.assertEqual(settings["alpha"], 0.05)
         self.assertTrue(settings["console"])
+        self.assertTrue(settings["excel"])
         self.assertTrue(settings["file_path"].is_absolute())
+        self.assertTrue(settings["output_path"].is_absolute())
 
     def test_all_pairs_mode(self):
         self.write_config(comparison_mode="all_pairs")
@@ -69,6 +74,38 @@ console = {console}
         settings = read_config(self.config_path)
 
         self.assertFalse(settings["console"])
+        self.assertTrue(settings["excel"])
+
+    def test_excel_disabled(self):
+        self.write_config(excel="false")
+
+        settings = read_config(self.config_path)
+
+        self.assertFalse(settings["excel"])
+        self.assertTrue(settings["console"])
+
+    def test_both_outputs_disabled(self):
+        self.write_config(
+            console="false",
+            excel="false",
+        )
+
+        with self.assertRaises(ValueError):
+            read_config(self.config_path)
+
+    def test_invalid_excel_setting(self):
+        self.write_config(excel='"true"')
+
+        with self.assertRaises(ValueError):
+            read_config(self.config_path)
+
+    def test_invalid_output_path(self):
+        self.write_config(
+            output_path="data/output/results.csv"
+        )
+
+        with self.assertRaises(ValueError):
+            read_config(self.config_path)
 
     def test_missing_configuration_file(self):
         missing_path = (

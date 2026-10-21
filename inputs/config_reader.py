@@ -69,20 +69,48 @@ def read_config(
         )
 
     console = output_settings.get("console")
+    excel = output_settings.get("excel")
+    output_path = output_settings.get("output_path")
 
     if type(console) is not bool:
         raise ValueError(
             "Output console must be true or false."
         )
 
+    if type(excel) is not bool:
+        raise ValueError(
+            "Output excel must be true or false."
+        )
+
+    if not console and not excel:
+        raise ValueError(
+            "At least one output format must be enabled."
+        )
+
+    if not isinstance(output_path, str) or not output_path.strip():
+        raise ValueError(
+            "Output path must be a non-empty string."
+        )
+
     data_path = Path(file_path.strip())
+    report_path = Path(output_path.strip())
 
     if not data_path.is_absolute():
         data_path = PROJECT_ROOT / data_path
+
+    if not report_path.is_absolute():
+        report_path = PROJECT_ROOT / report_path
+
+    if report_path.suffix.lower() != ".xlsx":
+        raise ValueError(
+            "Output path must end with .xlsx."
+        )
 
     return {
         "file_path": data_path,
         "comparison_mode": comparison_mode,
         "alpha": float(alpha),
         "console": console,
+        "excel": excel,
+        "output_path": report_path,
     }
