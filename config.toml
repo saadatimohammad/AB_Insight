@@ -1,0 +1,17 @@
+
+# A/B Insight - User Configuration
+
+[input]
+# Path to the experiment data file (CSV or XLSX)
+file_path = "data/sample_experiment.csv"
+
+[experiment]
+# Options: "control" or "all_pairs"
+comparison_mode = "control"
+
+# Statistical significance level (0 < alpha < 1)
+alpha = 0.05
+
+[output]
+# Display statistical results in the console
+console = true
