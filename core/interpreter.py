@@ -1,4 +1,7 @@
 
+from reports.locales.en import INTERPRETATIONS
+
+
 def interpret_comparison(comparison: dict) -> dict:
 
     rate_a = comparison["success_rate_a"]
@@ -24,24 +27,15 @@ def interpret_comparison(comparison: dict) -> dict:
 
     if is_significant:
         if direction == "increase":
-            interpretation = (
-                "Statistically significant increase "
-                "in success rate."
-            )
+            interpretation_key = "significant_increase"
         elif direction == "decrease":
-            interpretation = (
-                "Statistically significant decrease "
-                "in success rate."
-            )
+            interpretation_key = "significant_decrease"
         else:
-            interpretation = (
-                "Statistically significant difference "
-                "with no observed change in success rate."
-            )
+            interpretation_key = "significant_no_change"
     else:
-        interpretation = (
-            "No statistically significant difference detected."
-        )
+        interpretation_key = "not_significant"
+
+    interpretation = INTERPRETATIONS[interpretation_key]
 
     return {
         **comparison,
@@ -49,6 +43,7 @@ def interpret_comparison(comparison: dict) -> dict:
         "percentage_point_difference": percentage_point_difference,
         "relative_lift": relative_lift,
         "direction": direction,
+        "interpretation_key": interpretation_key,
         "interpretation": interpretation,
     }
 

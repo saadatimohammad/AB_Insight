@@ -1,15 +1,17 @@
+
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+
+from reports.locales.manager import get_translations
+
 
 NAVY = "17365D"
 WHITE = "FFFFFF"
 PALE_BLUE = "EAF1F7"
 PALE_GREEN = "E2F0D9"
 TEXT_COLOR = "243247"
-MUTED_COLOR = "66788A"
 
 PERCENT_FORMAT = "0.00%"
 P_VALUE_FORMAT = "0.000000"
@@ -98,8 +100,8 @@ def get_best_improvement(result):
 
     for comparison in result["comparisons"]:
         difference = (
-                comparison["success_rate_b"]
-                - comparison["success_rate_a"]
+            comparison["success_rate_b"]
+            - comparison["success_rate_a"]
         )
 
         if comparison["is_significant"] and difference > 0:
@@ -111,8 +113,8 @@ def get_best_improvement(result):
     return max(
         candidates,
         key=lambda comparison: (
-                comparison["success_rate_b"]
-                - comparison["success_rate_a"]
+            comparison["success_rate_b"]
+            - comparison["success_rate_a"]
         ),
     )
 
@@ -131,25 +133,25 @@ def get_improvement_label(comparison):
     )
 
 
-def get_statistical_conclusion(comparison):
+def get_statistical_conclusion(comparison, translations):
     if not comparison["is_significant"]:
-        return "Not significant"
+        return translations["not_significant"]
 
     difference = (
-            comparison["success_rate_b"]
-            - comparison["success_rate_a"]
+        comparison["success_rate_b"]
+        - comparison["success_rate_a"]
     )
 
     if difference > 0:
-        return "Significant increase"
+        return translations["significant_increase"]
 
     if difference < 0:
-        return "Significant decrease"
+        return translations["significant_decrease"]
 
-    return "No difference"
+    return translations["no_difference"]
 
 
-def build_interpretation(result, best):
+def build_interpretation(result, best, translations):
     comparisons = result["comparisons"]
 
     if best is None:
@@ -159,18 +161,9 @@ def build_interpretation(result, best):
         )
 
         if significant_count:
-            return (
-                "No statistically significant improvement "
-                "was identified. Some comparisons showed "
-                "a statistically significant decrease."
-            )
+            return translations["no_significant_improvement"]
 
-        return (
-            "No statistically significant difference "
-            "was identified among the tested comparisons. "
-            "Observed success rate differences are not "
-            "sufficient to establish an improvement."
-        )
+        return translations["no_significant_difference"]
 
     variant_a = best["variant_a"]
     variant_b = best["variant_b"]
@@ -181,29 +174,25 @@ def build_interpretation(result, best):
     difference = (rate_b - rate_a) * 100
 
     if rate_a == 0:
-        relative_text = (
-            "Relative improvement is undefined "
-            "because the baseline success rate is zero"
-        )
+        relative_text = translations["relative_undefined"]
     else:
         relative_improvement = (
-                (rate_b - rate_a) / rate_a
+            (rate_b - rate_a) / rate_a
         )
 
-        relative_text = (
-            f"equivalent to a "
-            f"{format_percentage(relative_improvement)} "
-            f"relative improvement"
+        relative_text = translations[
+            "relative_improvement"
+        ].format(
+            value=format_percentage(relative_improvement)
         )
 
-    interpretation = (
-        f"Variant {variant_b} achieved a "
-        f"{format_percentage(rate_b)} success rate "
-        f"compared with {format_percentage(rate_a)} "
-        f"for Variant {variant_a}. "
-        f"The difference is {difference:.2f} "
-        f"percentage points, {relative_text}, "
-        f"and is statistically significant."
+    interpretation = translations["best_improvement"].format(
+        variant_a=variant_a,
+        variant_b=variant_b,
+        rate_a=format_percentage(rate_a),
+        rate_b=format_percentage(rate_b),
+        difference=f"{difference:.2f}",
+        relative_text=relative_text,
     )
 
     other_comparisons = [
@@ -225,16 +214,23 @@ def build_interpretation(result, best):
         )
 
         interpretation += (
-            f" The following comparisons were "
-            f"not statistically significant: {labels}."
+            " "
+            + translations["other_not_significant"].format(
+                comparisons=labels
+            )
         )
 
     return interpretation
 
 
-def create_summary_sheet(workbook, result):
+def create_summary_sheet(
+    workbook,
+    result,
+    translations,
+    interpretation_translations,
+):
     worksheet = workbook.active
-    worksheet.title = "Summary"
+    worksheet.title = translations["summary_sheet"]
 
     variants = get_variant_details(result)
     best = get_best_improvement(result)
@@ -251,9 +247,9 @@ def create_summary_sheet(workbook, result):
     )
 
     comparison_mode = (
-        "Control vs alternatives"
+        translations["control_vs_alternatives"]
         if result["comparison_mode"] == "control"
-        else "All pairwise comparisons"
+        else translations["all_pairwise_comparisons"]
     )
 
     significant_count = sum(
@@ -262,21 +258,36 @@ def create_summary_sheet(workbook, result):
     )
 
     rows = [
-        ("Result overview", "Value"),
         (
-            "Best statistically supported improvement",
+            translations["result_overview"],
+            translations["value"],
+        ),
+        (
+            translations["best_improvement"],
             (
                 get_improvement_label(best)
                 if best is not None
-                else "None identified"
+                else translations["none_identified"]
             ),
         ),
-        ("Control variant", "A"),
-        ("Comparisons", comparison_labels),
-        ("Comparison mode", comparison_mode),
-        ("Significant comparisons", significant_count),
         (
-            "Control success rate",
+            translations["control_variant"],
+            "A",
+        ),
+        (
+            translations["comparisons"],
+            comparison_labels,
+        ),
+        (
+            translations["comparison_mode"],
+            comparison_mode,
+        ),
+        (
+            translations["significant_comparisons"],
+            significant_count,
+        ),
+        (
+            translations["control_success_rate"],
             control["success_rate"],
         ),
     ]
@@ -284,22 +295,24 @@ def create_summary_sheet(workbook, result):
     if best is not None:
         rows.extend([
             (
-                f'Variant {best["variant_b"]} success rate',
+                translations["variant_success_rate"].format(
+                    variant=best["variant_b"]
+                ),
                 best["success_rate_b"],
             ),
             (
-                "Success rate difference",
+                translations["success_rate_difference"],
                 (
-                        best["success_rate_b"]
-                        - best["success_rate_a"]
+                    best["success_rate_b"]
+                    - best["success_rate_a"]
                 ),
             ),
             (
-                "Relative improvement",
+                translations["relative_improvement"],
                 (
                     (
-                            best["success_rate_b"]
-                            - best["success_rate_a"]
+                        best["success_rate_b"]
+                        - best["success_rate_a"]
                     ) / best["success_rate_a"]
                     if best["success_rate_a"] != 0
                     else None
@@ -308,14 +321,27 @@ def create_summary_sheet(workbook, result):
         ])
     else:
         rows.extend([
-            ("Improved variant success rate", None),
-            ("Success rate difference", None),
-            ("Relative improvement", None),
+            (
+                translations["improved_variant_success_rate"],
+                None,
+            ),
+            (
+                translations["success_rate_difference"],
+                None,
+            ),
+            (
+                translations["relative_improvement"],
+                None,
+            ),
         ])
 
     rows.append((
-        "Interpretation",
-        build_interpretation(result, best),
+        translations["interpretation"],
+        build_interpretation(
+            result,
+            best,
+            interpretation_translations,
+        ),
     ))
 
     for row in rows:
@@ -371,7 +397,6 @@ def create_summary_sheet(workbook, result):
     text_cell.font = Font(
         name="Calibri",
         size=11,
-        bold=False,
         color=TEXT_COLOR,
     )
 
@@ -389,7 +414,7 @@ def create_summary_sheet(workbook, result):
     ].height = max(
         75,
         16 * (
-                len(str(text_cell.value)) // 65 + 2
+            len(str(text_cell.value)) // 65 + 2
         ),
     )
 
@@ -397,20 +422,24 @@ def create_summary_sheet(workbook, result):
     worksheet.sheet_view.showGridLines = False
 
 
-def create_comparisons_sheet(workbook, result):
+def create_comparisons_sheet(
+    workbook,
+    result,
+    translations,
+):
     worksheet = workbook.create_sheet(
-        "Comparison Details"
+        translations["comparison_details_sheet"]
     )
 
     headers = [
-        "Variant",
-        "Role",
-        "Sample size",
-        "Success count",
-        "Success rate",
-        "Improvement vs A",
-        "Adjusted p-value",
-        "Statistical conclusion",
+        translations["variant"],
+        translations["role"],
+        translations["sample_size"],
+        translations["success_count"],
+        translations["success_rate"],
+        translations["improvement_vs_control"],
+        translations["adjusted_p_value"],
+        translations["statistical_conclusion"],
     ]
 
     worksheet.append(headers)
@@ -432,13 +461,13 @@ def create_comparisons_sheet(workbook, result):
         if name == "A":
             worksheet.append([
                 name,
-                "Control",
+                translations["control"],
                 variant["sample_size"],
                 variant["success_count"],
                 variant["success_rate"],
                 None,
                 None,
-                "Reference",
+                translations["reference"],
             ])
             continue
 
@@ -448,12 +477,12 @@ def create_comparisons_sheet(workbook, result):
             improvement = None
         else:
             improvement = (
-                                  variant["success_rate"] - control_rate
-                          ) / control_rate
+                variant["success_rate"] - control_rate
+            ) / control_rate
 
         worksheet.append([
             name,
-            "Alternative",
+            translations["alternative"],
             variant["sample_size"],
             variant["success_count"],
             variant["success_rate"],
@@ -464,9 +493,12 @@ def create_comparisons_sheet(workbook, result):
                 else None
             ),
             (
-                get_statistical_conclusion(comparison)
+                get_statistical_conclusion(
+                    comparison,
+                    translations,
+                )
                 if comparison is not None
-                else "Not available"
+                else translations["not_available"]
             ),
         ])
 
@@ -499,9 +531,6 @@ def create_comparisons_sheet(workbook, result):
         },
     )
 
-    # In all-pairs mode, comparisons between alternatives
-    # are shown separately to preserve the one-row-per-variant
-    # structure of the main table.
     if result["comparison_mode"] == "all_pairs":
         extra_comparisons = [
             comparison
@@ -515,7 +544,9 @@ def create_comparisons_sheet(workbook, result):
             worksheet.cell(
                 row=start_row,
                 column=1,
-                value="Additional pairwise comparisons",
+                value=translations[
+                    "additional_pairwise_comparisons"
+                ],
             )
 
             worksheet.cell(
@@ -531,17 +562,17 @@ def create_comparisons_sheet(workbook, result):
             header_row = start_row + 1
 
             extra_headers = [
-                "Comparison",
-                "Success rate A",
-                "Success rate B",
-                "Difference",
-                "Adjusted p-value",
-                "Statistical conclusion",
+                translations["comparison"],
+                translations["success_rate_a"],
+                translations["success_rate_b"],
+                translations["difference"],
+                translations["adjusted_p_value"],
+                translations["statistical_conclusion"],
             ]
 
             for column, header in enumerate(
-                    extra_headers,
-                    start=1,
+                extra_headers,
+                start=1,
             ):
                 worksheet.cell(
                     row=header_row,
@@ -555,17 +586,20 @@ def create_comparisons_sheet(workbook, result):
                     comparison["success_rate_a"],
                     comparison["success_rate_b"],
                     (
-                            comparison["success_rate_b"]
-                            - comparison["success_rate_a"]
+                        comparison["success_rate_b"]
+                        - comparison["success_rate_a"]
                     ),
                     comparison["adjusted_p_value"],
-                    get_statistical_conclusion(comparison),
+                    get_statistical_conclusion(
+                        comparison,
+                        translations,
+                    ),
                 ])
 
             for row in worksheet.iter_rows(
-                    min_row=header_row + 1,
-                    max_row=worksheet.max_row,
-                    max_col=6,
+                min_row=header_row + 1,
+                max_row=worksheet.max_row,
+                max_col=6,
             ):
                 for cell in row:
                     cell.font = Font(
@@ -593,46 +627,47 @@ def create_comparisons_sheet(workbook, result):
     worksheet.sheet_view.showGridLines = False
 
 
-def create_guide_sheet(workbook):
-    worksheet = workbook.create_sheet("Guide")
+def create_guide_sheet(
+    workbook,
+    translations,
+    guide_translations,
+):
+    worksheet = workbook.create_sheet(
+        translations["guide_sheet"]
+    )
 
     rows = [
-        ("Metric", "Meaning"),
         (
-            "Success rate",
-            "Success count divided by sample size.",
+            translations["metric"],
+            translations["meaning"],
         ),
         (
-            "Improvement vs A",
-            "Relative change in success rate "
-            "compared with control A.",
+            translations["success_rate"],
+            guide_translations["success_rate"],
         ),
         (
-            "Success rate difference",
-            "Difference between two success rates; "
-            "shown as a percentage, equivalent to "
-            "percentage-point change.",
+            translations["improvement_vs_control"],
+            guide_translations["improvement_vs_control"],
         ),
         (
-            "Relative improvement",
-            "How much higher the success rate is "
-            "relative to the baseline rate.",
+            translations["success_rate_difference"],
+            guide_translations["success_rate_difference"],
         ),
         (
-            "Adjusted p-value",
-            "Statistical evidence after accounting "
-            "for multiple comparisons. Smaller values "
-            "indicate stronger evidence against "
-            "equal success rates.",
+            translations["relative_improvement"],
+            guide_translations["relative_improvement"],
         ),
         (
-            "Statistical significance",
-            "Whether the observed difference passes "
-            "the configured statistical threshold.",
+            translations["adjusted_p_value"],
+            guide_translations["adjusted_p_value"],
         ),
         (
-            "Reference",
-            "The control variant used as the baseline.",
+            translations["statistical_significance"],
+            guide_translations["statistical_significance"],
+        ),
+        (
+            translations["reference"],
+            guide_translations["reference"],
         ),
     ]
 
@@ -658,9 +693,25 @@ def create_guide_sheet(workbook):
 
 
 def generate_excel_report(
-        experiment_result: dict,
-        output_path: str | Path,
+    experiment_result: dict,
+    output_path: str | Path,
+    language: str = "en",
 ) -> Path:
+    translations = get_translations(
+        "EXCEL",
+        language,
+    )
+
+    guide_translations = get_translations(
+        "GUIDE",
+        language,
+    )
+
+    interpretation_translations = get_translations(
+        "SUMMARY_INTERPRETATIONS",
+        language,
+    )
+
     path = Path(output_path)
 
     if path.suffix.lower() != ".xlsx":
@@ -679,12 +730,21 @@ def generate_excel_report(
         create_summary_sheet(
             workbook,
             experiment_result,
+            translations,
+            interpretation_translations,
         )
+
         create_comparisons_sheet(
             workbook,
             experiment_result,
+            translations,
         )
-        create_guide_sheet(workbook)
+
+        create_guide_sheet(
+            workbook,
+            translations,
+            guide_translations,
+        )
 
         workbook.save(path)
     finally:

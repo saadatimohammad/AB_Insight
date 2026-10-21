@@ -35,12 +35,16 @@ def main() -> None:
 
         if settings["console"]:
             print()
-            print_console_report(interpreted_result)
+            print_console_report(
+                interpreted_result,
+                language=settings["language"],
+            )
 
         if settings["excel"]:
             report_path = generate_excel_report(
                 interpreted_result,
                 settings["output_path"],
+                language=settings["language"],
             )
 
             print(f"\nExcel report saved to: {report_path}")

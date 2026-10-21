@@ -17,9 +17,12 @@ class TestMain(unittest.TestCase):
         ]
 
         self.settings = {
-            "file_path": Path("data/sample_experiment.csv"),
+            "file_path": Path(
+                "data/datasets/sample_experiment.csv"
+            ),
             "comparison_mode": "control",
             "alpha": 0.05,
+            "language": "en",
             "console": True,
             "excel": True,
             "output_path": Path("data/output/results.xlsx"),
@@ -46,6 +49,7 @@ class TestMain(unittest.TestCase):
         mock_file.assert_called_once_with(
             str(self.settings["file_path"])
         )
+
         mock_report.assert_called_once()
         mock_excel.assert_called_once()
 
@@ -60,12 +64,22 @@ class TestMain(unittest.TestCase):
             "control",
         )
 
+        self.assertEqual(
+            mock_report.call_args.kwargs,
+            {"language": "en"},
+        )
+
         excel_result = mock_excel.call_args.args[0]
 
         self.assertEqual(result, excel_result)
         self.assertEqual(
             mock_excel.call_args.args[1],
             self.settings["output_path"],
+        )
+
+        self.assertEqual(
+            mock_excel.call_args.kwargs,
+            {"language": "en"},
         )
 
     @patch("main.generate_excel_report")
@@ -262,6 +276,36 @@ class TestMain(unittest.TestCase):
                 "Error:" in str(call)
                 for call in mock_print.call_args_list
             )
+        )
+
+    @patch("main.generate_excel_report")
+    @patch("main.print_console_report")
+    @patch("main.read_experiment_file")
+    @patch("main.read_config")
+    def test_language_passed_to_reports(
+        self,
+        mock_config,
+        mock_file,
+        mock_report,
+        mock_excel,
+    ):
+        mock_config.return_value = {
+            **self.settings,
+            "language": "en",
+        }
+        mock_file.return_value = self.variants
+        mock_excel.return_value = self.settings["output_path"]
+
+        main()
+
+        self.assertEqual(
+            mock_report.call_args.kwargs["language"],
+            "en",
+        )
+
+        self.assertEqual(
+            mock_excel.call_args.kwargs["language"],
+            "en",
         )
 
 

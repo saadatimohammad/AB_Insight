@@ -13,6 +13,8 @@ comparison_mode = "control"
 alpha = 0.05
 
 [output]
+language = "en"
+
 # Display statistical results in the console
 console = true
 

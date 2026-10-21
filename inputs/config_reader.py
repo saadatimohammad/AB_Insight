@@ -3,6 +3,11 @@ import math
 import tomllib
 from pathlib import Path
 
+from reports.locales.manager import (
+    DEFAULT_LANGUAGE,
+    get_locale,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.toml"
@@ -72,6 +77,14 @@ def read_config(
     excel = output_settings.get("excel")
     output_path = output_settings.get("output_path")
 
+    language = output_settings.get(
+        "language",
+        DEFAULT_LANGUAGE,
+    )
+
+    get_locale(language)
+    language = language.strip().lower()
+
     if type(console) is not bool:
         raise ValueError(
             "Output console must be true or false."
@@ -110,6 +123,7 @@ def read_config(
         "file_path": data_path,
         "comparison_mode": comparison_mode,
         "alpha": float(alpha),
+        "language": language,
         "console": console,
         "excel": excel,
         "output_path": report_path,
