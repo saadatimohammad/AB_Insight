@@ -1,5 +1,7 @@
 # A/B Insight
 
+**Languages:** English | [فارسی](README.fa.md)
+
 **A/B Insight** is a Python-based tool for analyzing A/B tests and multivariant experiments with binary outcomes, such as conversions, sign-ups, or other success events.
 
 It compares success rates, evaluates statistical significance using chi-square tests, applies the Bonferroni correction for multiple comparisons, and produces English or Persian reports in the console and Excel.
