@@ -1,4 +1,3 @@
-
 # English translations for A/B Insight reports.
 
 LANGUAGE_CODE = "en"
@@ -24,19 +23,13 @@ CONSOLE = {
 }
 
 INTERPRETATIONS = {
-    "significant_increase": (
-        "Statistically significant increase in success rate."
-    ),
-    "significant_decrease": (
-        "Statistically significant decrease in success rate."
-    ),
+    "significant_increase": "Statistically significant increase in success rate.",
+    "significant_decrease": "Statistically significant decrease in success rate.",
     "significant_no_change": (
         "Statistically significant difference "
         "with no observed change in success rate."
     ),
-    "not_significant": (
-        "No statistically significant difference detected."
-    ),
+    "not_significant": "No statistically significant difference detected.",
 }
 
 EXCEL = {
@@ -45,9 +38,8 @@ EXCEL = {
     "guide_sheet": "Guide",
     "result_overview": "Result overview",
     "value": "Value",
-    "best_improvement": (
-        "Best statistically supported improvement"
-    ),
+    "best_improvement": "Best statistically supported improvement",
+    "confirmed_winner": "Statistically confirmed winner",
     "none_identified": "None identified",
     "control_variant": "Control variant",
     "comparisons": "Comparisons",
@@ -55,11 +47,12 @@ EXCEL = {
     "significant_comparisons": "Significant comparisons",
     "control_success_rate": "Control success rate",
     "variant_success_rate": "Variant {variant} success rate",
-    "improved_variant_success_rate": (
-        "Improved variant success rate"
-    ),
+    "improved_variant_success_rate": "Improved variant success rate",
+    "winner_success_rate": "Winner success rate",
     "success_rate_difference": "Success rate difference",
+    "winner_rate_difference": "Difference vs closest competitor",
     "relative_improvement": "Relative improvement",
+    "winner_relative_improvement": "Relative improvement vs closest competitor",
     "interpretation": "Interpretation",
     "control_vs_alternatives": "Control vs alternatives",
     "all_pairwise_comparisons": "All pairwise comparisons",
@@ -80,9 +73,7 @@ EXCEL = {
     "significant_increase": "Significant increase",
     "significant_decrease": "Significant decrease",
     "no_difference": "No difference",
-    "additional_pairwise_comparisons": (
-        "Additional pairwise comparisons"
-    ),
+    "additional_pairwise_comparisons": "Additional pairwise comparisons",
     "comparison": "Comparison",
     "success_rate_a": "Success rate A",
     "success_rate_b": "Success rate B",
@@ -92,66 +83,59 @@ EXCEL = {
 }
 
 GUIDE = {
-    "success_rate": (
-        "Success count divided by sample size."
-    ),
+    "success_rate": "Success count divided by sample size.",
     "improvement_vs_control": (
-        "Relative change in success rate "
-        "compared with control A."
+        "Relative change in success rate compared with control A."
     ),
     "success_rate_difference": (
-        "Difference between two success rates; "
-        "shown as a percentage, equivalent to "
-        "percentage-point change."
+        "Difference between two success rates; shown as a percentage, "
+        "equivalent to percentage-point change."
     ),
     "relative_improvement": (
-        "How much higher the success rate is "
-        "relative to the baseline rate."
+        "How much higher the success rate is relative to the baseline rate."
     ),
     "adjusted_p_value": (
-        "Statistical evidence after accounting "
-        "for multiple comparisons. Smaller values "
-        "indicate stronger evidence against "
-        "equal success rates."
+        "Statistical evidence after accounting for multiple comparisons. "
+        "Smaller values indicate stronger evidence against equal success rates."
     ),
     "statistical_significance": (
-        "Whether the observed difference passes "
-        "the configured statistical threshold."
+        "Whether the observed difference passes the configured statistical threshold."
     ),
-    "reference": (
-        "The control variant used as the baseline."
-    ),
+    "reference": "The control variant used as the baseline.",
 }
 
 SUMMARY_INTERPRETATIONS = {
     "no_significant_difference": (
-        "No statistically significant difference "
-        "was identified among the tested comparisons. "
-        "Observed success rate differences are not "
+        "No statistically significant difference was identified among the "
+        "tested comparisons. Observed success rate differences are not "
         "sufficient to establish an improvement."
     ),
     "no_significant_improvement": (
-        "No statistically significant improvement "
-        "was identified. Some comparisons showed "
-        "a statistically significant decrease."
+        "No statistically significant improvement was identified. "
+        "Some comparisons showed a statistically significant decrease."
+    ),
+    "no_clear_winner": (
+        "No single variant demonstrated a statistically significant higher "
+        "success rate than every other variant after adjustment for multiple "
+        "comparisons. Individual pairwise differences may still be significant."
     ),
     "relative_undefined": (
-        "Relative improvement is undefined "
-        "because the baseline success rate is zero"
+        "Relative improvement is undefined because the baseline success rate is zero"
     ),
-    "relative_improvement": (
-        "equivalent to a {value} relative improvement"
-    ),
+    "relative_improvement": "equivalent to a {value} relative improvement",
     "best_improvement": (
-        "Variant {variant_b} achieved a {rate_b} "
-        "success rate compared with {rate_a} "
-        "for Variant {variant_a}. "
-        "The difference is {difference} "
-        "percentage points, {relative_text}, "
-        "and is statistically significant."
+        "Variant {variant_b} achieved a {rate_b} success rate compared with "
+        "{rate_a} for Variant {variant_a}. The difference is {difference} "
+        "percentage points, {relative_text}, and is statistically significant."
+    ),
+    "all_pairs_winner": (
+        "Variant {variant_b} has a {rate_b} success rate and is statistically "
+        "significantly better than every other variant after adjustment for "
+        "multiple comparisons. Its closest competitor, Variant {variant_a}, "
+        "has a {rate_a} success rate. The difference is {difference} percentage "
+        "points, {relative_text}."
     ),
     "other_not_significant": (
-        "The following comparisons were "
-        "not statistically significant: {comparisons}."
+        "The following comparisons were not statistically significant: {comparisons}."
     ),
 }

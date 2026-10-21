@@ -186,6 +186,141 @@ class TestExcelReport(unittest.TestCase):
                 invalid_path,
             )
 
+    def test_all_pairs_clear_winner(self):
+        variants = [
+            BinaryVariant("A", 1000, 100),
+            BinaryVariant("B", 1000, 200),
+            BinaryVariant("C", 1000, 350),
+        ]
+
+        workbook = self.create_report(
+            variants=variants,
+            comparison_mode="all_pairs",
+        )
+
+        summary = workbook["Summary"]
+
+        self.assertEqual(
+            summary["B2"].value,
+            "C",
+        )
+
+        self.assertIn(
+            "C",
+            summary["B11"].value,
+        )
+
+    def test_all_pairs_no_clear_winner(self):
+        variants = [
+            BinaryVariant("A", 1000, 100),
+            BinaryVariant("B", 1000, 200),
+            BinaryVariant("C", 1000, 205),
+        ]
+
+        workbook = self.create_report(
+            variants=variants,
+            comparison_mode="all_pairs",
+        )
+
+        summary = workbook["Summary"]
+
+        self.assertEqual(
+            summary["B2"].value,
+            "None identified",
+        )
+
+        self.assertIsNone(summary["B8"].value)
+        self.assertIsNone(summary["B9"].value)
+        self.assertIsNone(summary["B10"].value)
+
+        self.assertIn(
+            "no single variant demonstrated",
+            summary["B11"].value.lower(),
+        )
+
+    def test_all_pairs_control_is_winner(self):
+        variants = [
+            BinaryVariant("A", 1000, 350),
+            BinaryVariant("B", 1000, 200),
+            BinaryVariant("C", 1000, 100),
+        ]
+
+        workbook = self.create_report(
+            variants=variants,
+            comparison_mode="all_pairs",
+        )
+
+        summary = workbook["Summary"]
+
+        self.assertEqual(
+            summary["B2"].value,
+            "A",
+        )
+
+        self.assertIn(
+            "A",
+            summary["B11"].value,
+        )
+
+    def test_all_pairs_equal_success_rates(self):
+        variants = [
+            BinaryVariant("A", 1000, 200),
+            BinaryVariant("B", 1000, 200),
+            BinaryVariant("C", 1000, 200),
+        ]
+
+        workbook = self.create_report(
+            variants=variants,
+            comparison_mode="all_pairs",
+        )
+
+        summary = workbook["Summary"]
+
+        self.assertEqual(
+            summary["B2"].value,
+            "None identified",
+        )
+
+        self.assertIsNone(summary["B8"].value)
+        self.assertIsNone(summary["B9"].value)
+        self.assertIsNone(summary["B10"].value)
+
+    def test_control_mode_unchanged(self):
+        variants = [
+            BinaryVariant("A", 1000, 100),
+            BinaryVariant("B", 1000, 200),
+            BinaryVariant("C", 1000, 350),
+        ]
+
+        workbook = self.create_report(
+            variants=variants,
+            comparison_mode="control",
+        )
+
+        summary = workbook["Summary"]
+
+        self.assertEqual(
+            summary["B2"].value,
+            "C vs A",
+        )
+
+        self.assertAlmostEqual(
+            summary["B7"].value,
+            0.10,
+        )
+        self.assertAlmostEqual(
+            summary["B8"].value,
+            0.35,
+        )
+        self.assertAlmostEqual(
+            summary["B9"].value,
+            0.25,
+        )
+        self.assertAlmostEqual(
+            summary["B10"].value,
+            2.50,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

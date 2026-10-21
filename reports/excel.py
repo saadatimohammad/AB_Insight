@@ -1,4 +1,3 @@
-
 from copy import copy
 from pathlib import Path
 
@@ -100,27 +99,59 @@ def get_control_comparisons(result):
 
 
 def get_best_improvement(result):
-    candidates = []
+    comparisons = result["comparisons"]
 
-    for comparison in result["comparisons"]:
-        difference = (
-            comparison["success_rate_b"]
-            - comparison["success_rate_a"]
+    if result["comparison_mode"] == "control":
+        candidates = [
+            comparison
+            for comparison in comparisons
+            if comparison["variant_a"] == "A"
+            and comparison["is_significant"]
+            and comparison["success_rate_b"] > comparison["success_rate_a"]
+        ]
+        return max(
+            candidates,
+            key=lambda comparison: (
+                comparison["success_rate_b"] - comparison["success_rate_a"]
+            ),
+            default=None,
         )
 
-        if comparison["is_significant"] and difference > 0:
-            candidates.append(comparison)
+    variants = get_variant_details(result)
+    winner = max(variants, key=lambda variant: variant["success_rate"])
+    winner_name = winner["name"]
+    winner_rate = winner["success_rate"]
 
-    if not candidates:
-        return None
+    for opponent in variants:
+        if opponent["name"] == winner_name:
+            continue
+        if winner_rate <= opponent["success_rate"]:
+            return None
 
-    return max(
-        candidates,
-        key=lambda comparison: (
-            comparison["success_rate_b"]
-            - comparison["success_rate_a"]
-        ),
+        match = next(
+            (
+                comparison
+                for comparison in comparisons
+                if {comparison["variant_a"], comparison["variant_b"]}
+                == {winner_name, opponent["name"]}
+            ),
+            None,
+        )
+        if match is None or not match["is_significant"]:
+            return None
+
+    # Use the strongest runner-up as the reference for the winner summary.
+    runner_up = max(
+        (variant for variant in variants if variant["name"] != winner_name),
+        key=lambda variant: variant["success_rate"],
     )
+    return {
+        "variant_a": runner_up["name"],
+        "variant_b": winner_name,
+        "success_rate_a": runner_up["success_rate"],
+        "success_rate_b": winner_rate,
+        "is_significant": True,
+    }
 
 
 def get_comparison_label(comparison):
@@ -159,6 +190,9 @@ def build_interpretation(result, best, translations):
     comparisons = result["comparisons"]
 
     if best is None:
+        if result["comparison_mode"] == "all_pairs":
+            return translations["no_clear_winner"]
+
         significant_count = sum(
             comparison["is_significant"]
             for comparison in comparisons
@@ -190,7 +224,12 @@ def build_interpretation(result, best, translations):
             value=format_percentage(relative_improvement)
         )
 
-    interpretation = translations["best_improvement"].format(
+    interpretation_key = (
+        "all_pairs_winner"
+        if result["comparison_mode"] == "all_pairs"
+        else "best_improvement"
+    )
+    interpretation = translations[interpretation_key].format(
         variant_a=variant_a,
         variant_b=variant_b,
         rate_a=format_percentage(rate_a),
@@ -202,7 +241,8 @@ def build_interpretation(result, best, translations):
     other_comparisons = [
         comparison
         for comparison in comparisons
-        if comparison is not best
+        if {comparison["variant_a"], comparison["variant_b"]}
+        != {best["variant_a"], best["variant_b"]}
     ]
 
     not_significant = [
@@ -267,9 +307,15 @@ def create_summary_sheet(
             translations["value"],
         ),
         (
-            translations["best_improvement"],
             (
-                get_improvement_label(best)
+                translations["confirmed_winner"]
+                if result["comparison_mode"] == "all_pairs"
+                else translations["best_improvement"]
+            ),
+            (
+                best["variant_b"]
+                if best is not None and result["comparison_mode"] == "all_pairs"
+                else get_improvement_label(best)
                 if best is not None
                 else translations["none_identified"]
             ),
@@ -305,14 +351,22 @@ def create_summary_sheet(
                 best["success_rate_b"],
             ),
             (
-                translations["success_rate_difference"],
+                (
+                    translations["winner_rate_difference"]
+                    if result["comparison_mode"] == "all_pairs"
+                    else translations["success_rate_difference"]
+                ),
                 (
                     best["success_rate_b"]
                     - best["success_rate_a"]
                 ),
             ),
             (
-                translations["relative_improvement"],
+                (
+                    translations["winner_relative_improvement"]
+                    if result["comparison_mode"] == "all_pairs"
+                    else translations["relative_improvement"]
+                ),
                 (
                     (
                         best["success_rate_b"]
@@ -326,15 +380,27 @@ def create_summary_sheet(
     else:
         rows.extend([
             (
-                translations["improved_variant_success_rate"],
+                (
+                    translations["winner_success_rate"]
+                    if result["comparison_mode"] == "all_pairs"
+                    else translations["improved_variant_success_rate"]
+                ),
                 None,
             ),
             (
-                translations["success_rate_difference"],
+                (
+                    translations["winner_rate_difference"]
+                    if result["comparison_mode"] == "all_pairs"
+                    else translations["success_rate_difference"]
+                ),
                 None,
             ),
             (
-                translations["relative_improvement"],
+                (
+                    translations["winner_relative_improvement"]
+                    if result["comparison_mode"] == "all_pairs"
+                    else translations["relative_improvement"]
+                ),
                 None,
             ),
         ])
