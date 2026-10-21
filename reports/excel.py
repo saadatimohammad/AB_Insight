@@ -1,4 +1,5 @@
 
+from copy import copy
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -16,6 +17,9 @@ TEXT_COLOR = "243247"
 PERCENT_FORMAT = "0.00%"
 P_VALUE_FORMAT = "0.000000"
 
+ENGLISH_FONT = "Calibri"
+PERSIAN_FONT = "B Nazanin"
+
 
 def style_header(worksheet, row_number=1):
     for cell in worksheet[row_number]:
@@ -27,7 +31,7 @@ def style_header(worksheet, row_number=1):
             fgColor=NAVY,
         )
         cell.font = Font(
-            name="Calibri",
+            name=ENGLISH_FONT,
             size=11,
             bold=True,
             color=WHITE,
@@ -45,7 +49,7 @@ def style_body(worksheet, first_row=2):
     for row in worksheet.iter_rows(min_row=first_row):
         for cell in row:
             cell.font = Font(
-                name="Calibri",
+                name=ENGLISH_FONT,
                 size=11,
                 color=TEXT_COLOR,
             )
@@ -242,7 +246,7 @@ def create_summary_sheet(
     )
 
     comparison_labels = ", ".join(
-        get_comparison_label(comparison)
+        f"({get_comparison_label(comparison)})"
         for comparison in result["comparisons"]
     )
 
@@ -370,7 +374,7 @@ def create_summary_sheet(
             fgColor=PALE_GREEN,
         )
         cell.font = Font(
-            name="Calibri",
+            name=ENGLISH_FONT,
             size=11,
             bold=True,
             color=TEXT_COLOR,
@@ -388,14 +392,14 @@ def create_summary_sheet(
     )
 
     label_cell.font = Font(
-        name="Calibri",
+        name=ENGLISH_FONT,
         size=11,
         bold=True,
         color=TEXT_COLOR,
     )
 
     text_cell.font = Font(
-        name="Calibri",
+        name=ENGLISH_FONT,
         size=11,
         color=TEXT_COLOR,
     )
@@ -553,7 +557,7 @@ def create_comparisons_sheet(
                 row=start_row,
                 column=1,
             ).font = Font(
-                name="Calibri",
+                name=ENGLISH_FONT,
                 bold=True,
                 size=12,
                 color=NAVY,
@@ -603,7 +607,7 @@ def create_comparisons_sheet(
             ):
                 for cell in row:
                     cell.font = Font(
-                        name="Calibri",
+                        name=ENGLISH_FONT,
                         size=11,
                         color=TEXT_COLOR,
                     )
@@ -692,6 +696,31 @@ def create_guide_sheet(
     worksheet.sheet_view.showGridLines = False
 
 
+def apply_language_formatting(workbook, language):
+    is_persian = language.strip().lower() == "fa"
+
+    font_name = (
+        PERSIAN_FONT
+        if is_persian
+        else ENGLISH_FONT
+    )
+
+    for worksheet in workbook.worksheets:
+        worksheet.sheet_view.rightToLeft = is_persian
+
+        if not is_persian:
+            continue
+
+        for row in worksheet.iter_rows():
+            for cell in row:
+                if cell.value is None:
+                    continue
+
+                updated_font = copy(cell.font)
+                updated_font.name = font_name
+                cell.font = updated_font
+
+
 def generate_excel_report(
     experiment_result: dict,
     output_path: str | Path,
@@ -744,6 +773,11 @@ def generate_excel_report(
             workbook,
             translations,
             guide_translations,
+        )
+
+        apply_language_formatting(
+            workbook,
+            language,
         )
 
         workbook.save(path)

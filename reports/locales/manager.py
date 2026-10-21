@@ -1,11 +1,12 @@
 
-from reports.locales import en
+from reports.locales import en, fa
 
 
 DEFAULT_LANGUAGE = "en"
 
 SUPPORTED_LANGUAGES = {
     "en": en,
+    "fa": fa,
 }
 
 

@@ -2,6 +2,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from string import Formatter
 from unittest.mock import patch
 
 from openpyxl import load_workbook
@@ -11,7 +12,7 @@ from core.interpreter import interpret_experiment
 from core.models import BinaryVariant
 from reports.console import generate_console_report
 from reports.excel import generate_excel_report
-from reports.locales import en
+from reports.locales import en, fa
 
 
 class TestReportLocalization(unittest.TestCase):
@@ -30,6 +31,26 @@ class TestReportLocalization(unittest.TestCase):
 
         self.result = interpret_experiment(result)
 
+    def generate_workbook(self, language):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+
+        output_path = (
+            Path(temporary_directory.name)
+            / f"report_{language}.xlsx"
+        )
+
+        generate_excel_report(
+            self.result,
+            output_path,
+            language=language,
+        )
+
+        workbook = load_workbook(output_path)
+        self.addCleanup(workbook.close)
+
+        return workbook
+
     def test_translation_sections_exist(self):
         sections = [
             "CONSOLE",
@@ -39,32 +60,43 @@ class TestReportLocalization(unittest.TestCase):
             "SUMMARY_INTERPRETATIONS",
         ]
 
-        for section in sections:
-            with self.subTest(section=section):
-                translations = getattr(en, section)
+        for locale in (en, fa):
+            for section in sections:
+                with self.subTest(
+                    language=locale.LANGUAGE_CODE,
+                    section=section,
+                ):
+                    translations = getattr(locale, section)
 
-                self.assertIsInstance(
-                    translations,
-                    dict,
-                )
+                    self.assertIsInstance(
+                        translations,
+                        dict,
+                    )
 
-                self.assertTrue(translations)
+                    self.assertTrue(translations)
 
     def test_translation_values_are_strings(self):
         sections = [
-            en.CONSOLE,
-            en.INTERPRETATIONS,
-            en.EXCEL,
-            en.GUIDE,
-            en.SUMMARY_INTERPRETATIONS,
+            "CONSOLE",
+            "INTERPRETATIONS",
+            "EXCEL",
+            "GUIDE",
+            "SUMMARY_INTERPRETATIONS",
         ]
 
-        for translations in sections:
-            for key, value in translations.items():
-                with self.subTest(key=key):
-                    self.assertIsInstance(key, str)
-                    self.assertIsInstance(value, str)
-                    self.assertTrue(value.strip())
+        for locale in (en, fa):
+            for section in sections:
+                translations = getattr(locale, section)
+
+                for key, value in translations.items():
+                    with self.subTest(
+                        language=locale.LANGUAGE_CODE,
+                        section=section,
+                        key=key,
+                    ):
+                        self.assertIsInstance(key, str)
+                        self.assertIsInstance(value, str)
+                        self.assertTrue(value.strip())
 
     def test_summary_translation_placeholders(self):
         required_placeholders = {
@@ -84,23 +116,25 @@ class TestReportLocalization(unittest.TestCase):
             },
         }
 
-        from string import Formatter
-
         formatter = Formatter()
 
-        for key, expected in required_placeholders.items():
-            template = en.SUMMARY_INTERPRETATIONS[key]
+        for locale in (en, fa):
+            for key, expected in required_placeholders.items():
+                template = locale.SUMMARY_INTERPRETATIONS[key]
 
-            actual = {
-                field_name
-                for _, field_name, _, _ in formatter.parse(
-                    template
-                )
-                if field_name is not None
-            }
+                actual = {
+                    field_name
+                    for _, field_name, _, _ in formatter.parse(
+                        template
+                    )
+                    if field_name is not None
+                }
 
-            with self.subTest(key=key):
-                self.assertEqual(actual, expected)
+                with self.subTest(
+                    language=locale.LANGUAGE_CODE,
+                    key=key,
+                ):
+                    self.assertEqual(actual, expected)
 
     def test_console_uses_translated_labels(self):
         with patch.dict(
@@ -244,6 +278,130 @@ class TestReportLocalization(unittest.TestCase):
                 )
 
             self.assertFalse(output_path.exists())
+
+    def test_persian_sheet_names(self):
+        workbook = self.generate_workbook("fa")
+
+        self.assertEqual(
+            workbook.sheetnames,
+            [
+                fa.EXCEL["summary_sheet"],
+                fa.EXCEL["comparison_details_sheet"],
+                fa.EXCEL["guide_sheet"],
+            ],
+        )
+
+    def test_english_sheet_names(self):
+        workbook = self.generate_workbook("en")
+
+        self.assertEqual(
+            workbook.sheetnames,
+            [
+                en.EXCEL["summary_sheet"],
+                en.EXCEL["comparison_details_sheet"],
+                en.EXCEL["guide_sheet"],
+            ],
+        )
+
+    def test_persian_sheets_are_right_to_left(self):
+        workbook = self.generate_workbook("fa")
+
+        for worksheet in workbook.worksheets:
+            with self.subTest(sheet=worksheet.title):
+                self.assertTrue(
+                    worksheet.sheet_view.rightToLeft
+                )
+
+    def test_english_sheets_are_left_to_right(self):
+        workbook = self.generate_workbook("en")
+
+        for worksheet in workbook.worksheets:
+            with self.subTest(sheet=worksheet.title):
+                self.assertFalse(
+                    worksheet.sheet_view.rightToLeft
+                )
+
+    def test_persian_cells_use_b_nazanin(self):
+        workbook = self.generate_workbook("fa")
+
+        for worksheet in workbook.worksheets:
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    if cell.value is None:
+                        continue
+
+                    with self.subTest(
+                        sheet=worksheet.title,
+                        cell=cell.coordinate,
+                    ):
+                        self.assertEqual(
+                            cell.font.name,
+                            "B Nazanin",
+                        )
+
+    def test_english_cells_use_calibri(self):
+        workbook = self.generate_workbook("en")
+
+        for worksheet in workbook.worksheets:
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    if cell.value is None:
+                        continue
+
+                    with self.subTest(
+                        sheet=worksheet.title,
+                        cell=cell.coordinate,
+                    ):
+                        self.assertEqual(
+                            cell.font.name,
+                            "Calibri",
+                        )
+
+    def test_persian_summary_comparison_format(self):
+        workbook = self.generate_workbook("fa")
+        worksheet = workbook[fa.EXCEL["summary_sheet"]]
+
+        self.assertEqual(
+            worksheet["B4"].value,
+            "(A vs B)",
+        )
+
+    def test_english_summary_comparison_format(self):
+        workbook = self.generate_workbook("en")
+        worksheet = workbook[en.EXCEL["summary_sheet"]]
+
+        self.assertEqual(
+            worksheet["B4"].value,
+            "(A vs B)",
+        )
+
+    def test_persian_header_keeps_bold_format(self):
+        workbook = self.generate_workbook("fa")
+
+        for worksheet in workbook.worksheets:
+            with self.subTest(sheet=worksheet.title):
+                self.assertTrue(
+                    worksheet["A1"].font.bold
+                )
+
+                self.assertEqual(
+                    worksheet["A1"].font.name,
+                    "B Nazanin",
+                )
+
+    def test_english_header_keeps_bold_format(self):
+        workbook = self.generate_workbook("en")
+
+        for worksheet in workbook.worksheets:
+            with self.subTest(sheet=worksheet.title):
+                self.assertTrue(
+                    worksheet["A1"].font.bold
+                )
+
+                self.assertEqual(
+                    worksheet["A1"].font.name,
+                    "Calibri",
+                )
 
 
 if __name__ == "__main__":
