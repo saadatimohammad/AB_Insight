@@ -8,3 +8,7 @@ __pycache__/
 .env.*
 data/output/
 *.log
+# PyInstaller generated files
+/build/
+/dist/
+/AB_Insight.spec

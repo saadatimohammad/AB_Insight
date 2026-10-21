@@ -1,5 +1,6 @@
 
 import math
+import sys
 import tomllib
 from pathlib import Path
 
@@ -9,7 +10,14 @@ from reports.locales.manager import (
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+def get_project_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
+    return Path(__file__).resolve().parent.parent
+
+
+PROJECT_ROOT = get_project_root()
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.toml"
 
 

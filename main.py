@@ -1,4 +1,5 @@
 
+import sys
 import tomllib
 
 from config import PROJECT_NAME, VERSION
@@ -37,7 +38,7 @@ def main() -> None:
             print()
             print_console_report(
                 interpreted_result,
-                language=settings["language"],
+                language="en",
             )
 
         if settings["excel"]:
@@ -60,5 +61,16 @@ def main() -> None:
         print(f"\nError: {error}")
 
 
+def wait_before_exit() -> None:
+    if getattr(sys, "frozen", False) and sys.stdin.isatty():
+        try:
+            input("\nPress Enter to exit...")
+        except (EOFError, OSError):
+            pass
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        wait_before_exit()
