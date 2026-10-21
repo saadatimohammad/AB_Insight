@@ -3,7 +3,7 @@
 
 [input]
 # Path to the experiment data file (CSV or XLSX)
-file_path = "data/sample_experiment.csv"
+file_path = "data/datasets/sample_experiment.csv"
 
 [experiment]
 # Options: "control" or "all_pairs"
